@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #fafaf9;
+  --fg: #0a0a0a;
+  --muted: #6b7280;
+  --card: #ffffff;
+  --border: #e7e5e4;
+  --accent: #ec4899;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0a0a;
+    --fg: #fafafa;
+    --muted: #a1a1aa;
+    --card: #111111;
+    --border: #27272a;
+  }
+}
+
+html, body { background: var(--bg); color: var(--fg); }
+body { font-feature-settings: "ss01", "cv11"; }
+
+a { color: inherit; }
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition active:scale-95;
+}
+.btn-primary { @apply bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200; }
+.btn-ghost { @apply bg-transparent hover:bg-black/5 dark:hover:bg-white/10; }
+
+.input {
+  @apply w-full rounded-2xl border bg-white/70 px-4 py-3 text-sm outline-none transition placeholder:text-neutral-400 focus:border-neutral-900 dark:bg-neutral-900/70 dark:focus:border-white;
+  border-color: var(--border);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  @apply rounded-3xl;
+}
