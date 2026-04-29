@@ -305,7 +305,7 @@ function isImageUrl(s: string) {
   );
 }
 
-const BANNER_RE = /^(quick find|tutorial|hall of finds|table of contents|how to|step \d|legend|key|index|category|categories|navigation|menu|contents|new items|coming soon|sale|giveaway|discord|telegram|join|follow|subscribe|read me|important|notice|warning|disclaimer|free \$|click here|to (remove|use|find|disable|enable|search|access|view|see|open|get)\b|inspect element|press ctrl|right click|copy and paste)/i;
+const BANNER_RE = /^(quick find|tutorial|hall of finds|table of contents|how to|step \d|legend|key|index|category|categories|navigation|menu|contents|new items|coming soon|sale|giveaway|discord|telegram|join|follow|subscribe|read me|important|notice|warning|disclaimer|free \$|click here|to (remove|use|find|disable|enable|search|access|view|see|open|get)\b|inspect element|press ctrl|right click|copy and paste|register (for|to|here|now)|sign up|use code|get \d+%|claim your|coupon (code|for)|\d+% off|👆|💸)/i;
 
 function isLikelyItemName(name: string): boolean {
   if (!name) return false;

@@ -2,6 +2,10 @@ export type AgentKey =
   | "joyagoo"
   | "joyabuy"
   | "mulebuy"
+  | "oopbuy"
+  | "litbuy"
+  | "cnfans"
+  | "itaobuy"
   | "sugargoo"
   | "cssbuy"
   | "superbuy"
@@ -39,6 +43,10 @@ const AGENTS: Record<AgentKey, AgentMeta> = {
   joyagoo:     { key: "joyagoo",     label: "Joyagoo",     kind: "agent",       color: "#ff7a59" },
   joyabuy:     { key: "joyabuy",     label: "Joyabuy",     kind: "agent",       color: "#ff5722" },
   mulebuy:     { key: "mulebuy",     label: "Mulebuy",     kind: "agent",       color: "#8b5cf6" },
+  oopbuy:      { key: "oopbuy",      label: "Oopbuy",      kind: "agent",       color: "#3b82f6" },
+  litbuy:      { key: "litbuy",      label: "Litbuy",      kind: "agent",       color: "#14b8a6" },
+  cnfans:      { key: "cnfans",      label: "CNFans",      kind: "agent",       color: "#0f172a" },
+  itaobuy:     { key: "itaobuy",     label: "ITaobuy",     kind: "agent",       color: "#84cc16" },
   sugargoo:    { key: "sugargoo",    label: "Sugargoo",    kind: "agent",       color: "#f5b342" },
   cssbuy:      { key: "cssbuy",      label: "CSSBuy",      kind: "agent",       color: "#1f2937" },
   superbuy:    { key: "superbuy",    label: "Superbuy",    kind: "agent",       color: "#e11d48" },
@@ -70,6 +78,10 @@ const HOST_RULES: Array<[RegExp, AgentKey]> = [
   [/(^|\.)joyagoo\./i, "joyagoo"],
   [/(^|\.)joyabuy\./i, "joyabuy"],
   [/(^|\.)mulebuy\./i, "mulebuy"],
+  [/(^|\.)oopbuy\./i, "oopbuy"],
+  [/(^|\.)litbuy\./i, "litbuy"],
+  [/(^|\.)cnfans\./i, "cnfans"],
+  [/(^|\.)itaobuy\./i, "itaobuy"],
   [/(^|\.)sugargoo\./i, "sugargoo"],
   [/(^|\.)cssbuy\./i, "cssbuy"],
   [/(^|\.)superbuy\./i, "superbuy"],
