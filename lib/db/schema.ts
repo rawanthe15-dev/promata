@@ -14,6 +14,7 @@ export const pages = pgTable(
     displayName: text("display_name"),
     bio: text("bio"),
     theme: text("theme").default("default"),
+    hiddenItems: jsonb("hidden_items").$type<number[]>().default(sql`'[]'::jsonb`).notNull(),
     data: jsonb("data").$type<ParsedSheet>().notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
