@@ -112,12 +112,12 @@ type ColMap = {
 };
 
 const HEADER_PATTERNS: Array<{ re: RegExp; key: keyof ColMap }> = [
-  { re: /^(item|product|brand|name|title)s?$/i, key: "name" },
-  { re: /^(photo|image|pic(ture)?)s?$/i, key: "image" },
-  { re: /(link|url|agent|joya|sugar|cssbuy|panda|super|wegobuy|kakobuy|hoobuy|ootd|weidian|taobao|1688)/i, key: "link" },
-  { re: /^(price|prices|cost|usd|cny)$/i, key: "price" },
-  { re: /^(review|quality|rating|qc|score)/i, key: "review" },
-  { re: /^(note|notes|comment|description|info)s?$/i, key: "notes" },
+  { re: /^(item|product|brand|name|title|finds?)s?$/i, key: "name" },
+  { re: /^(photo|image|pic(ture)?|preview)s?$/i, key: "image" },
+  { re: /(link|url|buy|order|agent|joya|sugar|cssbuy|panda|super|wegobuy|kakobuy|kakoclub|hoobuy|ootd|allchina|hagobuy|lovegobuy|weidian|taobao|tmall|1688|alibaba)/i, key: "link" },
+  { re: /^(price|prices|cost|usd|cny|rmb|￥|¥|\$|€|£|元|价格|价钱)$/i, key: "price" },
+  { re: /^(review|quality|rating|qc|score|accuracy|legit)/i, key: "review" },
+  { re: /^(note|notes|comment|description|info|details?)s?$/i, key: "notes" },
 ];
 
 function findHeader(grid: SheetsApiCell[][]): { rowIdx: number; map: ColMap } | null {
@@ -175,19 +175,19 @@ function extractWithHeader(row: SheetsApiCell[], map: ColMap): ParsedItem | null
   const links: LinkRef[] = [];
   const seen = new Set<string>();
 
-  // links: prefer mapped link columns, but also accept any hyperlinked cell
-  // (some sheets put the agent link in an unlabeled column)
+  // links: hyperlinks first, then text-embedded URLs (sheets where users
+  // pasted the URL as plain text rather than HYPERLINK()).
   const linkCols = new Set(map.link ?? []);
   for (let c = 0; c < row.length; c++) {
-    const href = row[c]?.hyperlink;
-    if (!href) continue;
-    if (!isHttp(href)) continue;
-    if (isImageUrl(href)) continue;
-    // de-prioritize cells that are clearly the wrong column (e.g., a name column with a URL)
+    const cell = row[c];
+    if (!cell) continue;
     if (map.name !== undefined && c === map.name && !linkCols.has(c)) continue;
-    if (seen.has(href)) continue;
-    seen.add(href);
-    links.push({ url: href, agent: detectAgent(href) });
+    for (const url of cellUrls(cell)) {
+      if (isImageUrl(url)) continue;
+      if (seen.has(url)) continue;
+      seen.add(url);
+      links.push({ url, agent: detectAgent(url) });
+    }
   }
 
   if (links.length === 0) return null;
@@ -213,16 +213,15 @@ function extractWithHeader(row: SheetsApiCell[], map: ColMap): ParsedItem | null
     if (h && isImageUrl(h)) { imageUrl = h; break; }
   }
 
-  const prices = cellText(map.price) || pickByKeyword(row, /(usd|cny|￥|\$|€|£)/i, [map.name]);
-  const review = cellText(map.review) || pickByKeyword(row, /(quality|accuracy|\d\s*\/\s*10)/i, [map.name, map.price]);
+  const prices = cellText(map.price) || pickByKeyword(row, PRICE_RE, [map.name]);
+  const review = cellText(map.review) || pickByKeyword(row, REVIEW_RE, [map.name, map.price]);
   const notes = cellText(map.notes) || undefined;
 
-  // Drop rows that look like nav/tutorial entries: no price, no review,
-  // and no link to a known shopping agent or marketplace.
+  // Drop nav/tutorial rows: name fails sanity AND no price/review/shopping signal.
   const hasShoppingLink = links.some(
     (l) => l.agent.kind === "agent" || l.agent.kind === "marketplace"
   );
-  if (!prices && !review && !hasShoppingLink) return null;
+  if (!prices && !review && !hasShoppingLink && !looksLikeProductRow(row, map)) return null;
 
   return {
     name: cleanName(name),
@@ -240,33 +239,59 @@ function extractHeuristic(row: SheetsApiCell[]): ParsedItem | null {
   let imageUrl: string | undefined;
 
   for (const cell of row) {
-    const href = cell?.hyperlink;
-    if (!href) continue;
-    if (isImageUrl(href)) {
-      if (!imageUrl) imageUrl = href;
-      continue;
+    if (!cell) continue;
+    for (const url of cellUrls(cell)) {
+      if (isImageUrl(url)) {
+        if (!imageUrl) imageUrl = url;
+        continue;
+      }
+      if (seen.has(url)) continue;
+      seen.add(url);
+      links.push({ url, agent: detectAgent(url) });
     }
-    if (!isHttp(href)) continue;
-    if (seen.has(href)) continue;
-    seen.add(href);
-    links.push({ url: href, agent: detectAgent(href) });
   }
 
   if (links.length === 0) return null;
-
-  // Drop "navigation" rows: only links present are social/non-shopping
-  const shoppingLinks = links.filter((l) => l.agent.kind !== "social" && l.agent.kind !== "other");
-  if (shoppingLinks.length === 0) return null;
 
   const texts = row.map((c) => (c?.formattedValue ?? "").trim());
   const name = pickName(texts);
   if (!isLikelyItemName(name)) return null;
 
-  const prices = pickByKeyword(row, /(usd|cny|￥|\$|€|£)/i);
-  const review = pickByKeyword(row, /(quality|accuracy|\d\s*\/\s*10)/i, []);
+  const prices = pickByKeyword(row, PRICE_RE);
+  const review = pickByKeyword(row, REVIEW_RE);
   const notes = pickLongest(texts, [name, prices, review]);
 
   return { name: cleanName(name), imageUrl, prices, review, notes, links };
+}
+
+const URL_RE = /https?:\/\/[^\s<>"'　)]+/gi;
+
+function cellUrls(cell: SheetsApiCell): string[] {
+  const out: string[] = [];
+  if (cell.hyperlink && isHttp(cell.hyperlink)) out.push(cell.hyperlink);
+  const text = cell.formattedValue ?? cell.effectiveValue?.stringValue ?? "";
+  if (text) {
+    const matches = text.match(URL_RE);
+    if (matches) for (const m of matches) out.push(m.replace(/[.,;)]+$/, ""));
+  }
+  return out;
+}
+
+const PRICE_RE = /(usd|cny|rmb|￥|¥|\$|€|£|元|人民币|\b\d{1,4}(\.\d{1,2})?\s*(rmb|cny|usd|￥|¥|\$|元)\b)/i;
+const REVIEW_RE = /(quality|accuracy|review|rating|qc|\d\s*\/\s*10|\d\s*out of\s*10)/i;
+
+// Last-resort signal a row "looks like a product row": short-ish single-line name
+// in cell 0, plus at least one numeric-looking cell (price-y).
+function looksLikeProductRow(row: SheetsApiCell[], map: ColMap): boolean {
+  const nameIdx = map.name ?? 0;
+  const name = (row[nameIdx]?.formattedValue ?? "").trim();
+  if (!isLikelyItemName(name)) return false;
+  const hasNumeric = row.some((c, i) => {
+    if (i === nameIdx) return false;
+    const t = (c?.formattedValue ?? "").trim();
+    return /\d/.test(t) && t.length <= 40;
+  });
+  return hasNumeric;
 }
 
 function isHttp(s: string) {
