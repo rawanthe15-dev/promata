@@ -1,0 +1,10 @@
+node_modules/
+
+# Your logged-in WhatsApp session. Anyone with this folder can read your chats.
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Your financial data and settings.
+data/
+commissions.xlsx
+config.json

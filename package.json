@@ -1,0 +1,21 @@
+{
+  "name": "whatsapp-commission-log",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reads one WhatsApp group through a linked device and logs commission payments to a spreadsheet.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js sync",
+    "watch": "node index.js watch",
+    "groups": "node index.js groups",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "exceljs": "4.4.0",
+    "qrcode-terminal": "0.12.0",
+    "whatsapp-web.js": "1.34.7"
+  }
+}
